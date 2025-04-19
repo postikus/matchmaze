@@ -1,1 +1,0 @@
-/Users/ignatkarpov/matchmaze/build/app/intermediates/cxx/RelWithDebInfo/586n2g4b/obj/x86_64

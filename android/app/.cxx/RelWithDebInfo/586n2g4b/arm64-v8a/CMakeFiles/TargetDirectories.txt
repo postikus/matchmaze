@@ -1,2 +1,0 @@
-/Users/ignatkarpov/matchmaze/android/app/.cxx/RelWithDebInfo/586n2g4b/arm64-v8a/CMakeFiles/edit_cache.dir
-/Users/ignatkarpov/matchmaze/android/app/.cxx/RelWithDebInfo/586n2g4b/arm64-v8a/CMakeFiles/rebuild_cache.dir
