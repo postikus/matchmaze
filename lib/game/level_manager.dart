@@ -4,22 +4,166 @@ import '../components/crystal.dart';
 import '../core/game_settings.dart';
 
 class LevelManager {
-  final List<List<Crystal?>> grid = List.generate(GameSettings.gridSize, (_) => List.filled(GameSettings.gridSize, null));
+  static const int gridSize = 8;
+  static const double spacing = 5.0;
+
+  List<List<Crystal?>> grid = List.generate(gridSize, (_) => List.filled(gridSize, null));
   final _random = Random();
 
   void generateField() {
-    final colors = CrystalColor.values;
-    
-    for (int row = 0; row < GameSettings.gridSize; row++) {
-      for (int col = 0; col < GameSettings.gridSize; col++) {
-        final crystal = Crystal(
-          color: colors[_random.nextInt(colors.length)],
-          position: _getPositionForCell(row, col),
-          row: row,
-          col: col,
-        );
-        grid[row][col] = crystal;
+    bool validField = false;
+    int attempts = 0;
+    const maxAttempts = 100;
+
+    while (!validField && attempts < maxAttempts) {
+      // Generate a new field
+      for (int i = 0; i < gridSize; i++) {
+        for (int j = 0; j < gridSize; j++) {
+          CrystalColor color;
+          bool validColor = false;
+          int colorAttempts = 0;
+          const maxColorAttempts = 10;
+
+          // Try to find a color that doesn't create immediate matches
+          while (!validColor && colorAttempts < maxColorAttempts) {
+            color = CrystalColor.values[Random().nextInt(CrystalColor.values.length)];
+            grid[i][j] = Crystal(
+              color: color,
+              position: _getPositionForCell(i, j),
+              row: i,
+              col: j,
+            );
+
+            // Check if this color creates a match
+            if (!_createsMatch(i, j)) {
+              validColor = true;
+            } else {
+              colorAttempts++;
+            }
+          }
+
+          // If we couldn't find a valid color, start over
+          if (!validColor) {
+            break;
+          }
+        }
       }
+
+      // Check if there's at least one possible match-3 move
+      if (_hasPossibleMatch()) {
+        validField = true;
+      } else {
+        attempts++;
+      }
+    }
+
+    if (!validField) {
+      // If we couldn't generate a valid field after max attempts,
+      // generate a simple field with guaranteed match-3 possibility
+      _generateGuaranteedField();
+    }
+  }
+
+  bool _createsMatch(int row, int col) {
+    if (row < 2 && col < 2) return false; // Can't have matches in first 2 rows/cols
+
+    Crystal? current = grid[row][col];
+    if (current == null) return false;
+
+    // Check horizontal matches
+    if (col >= 2) {
+      if (grid[row][col - 1]?.color == current.color &&
+          grid[row][col - 2]?.color == current.color) {
+        return true;
+      }
+    }
+
+    // Check vertical matches
+    if (row >= 2) {
+      if (grid[row - 1][col]?.color == current.color &&
+          grid[row - 2][col]?.color == current.color) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  bool _hasPossibleMatch() {
+    // Check all possible swaps
+    for (int i = 0; i < gridSize; i++) {
+      for (int j = 0; j < gridSize; j++) {
+        // Try swapping with right neighbor
+        if (j < gridSize - 1) {
+          _swapCrystals(i, j, i, j + 1);
+          if (findMatches().isNotEmpty) {
+            _swapCrystals(i, j, i, j + 1); // Swap back
+            return true;
+          }
+          _swapCrystals(i, j, i, j + 1); // Swap back
+        }
+
+        // Try swapping with bottom neighbor
+        if (i < gridSize - 1) {
+          _swapCrystals(i, j, i + 1, j);
+          if (findMatches().isNotEmpty) {
+            _swapCrystals(i, j, i + 1, j); // Swap back
+            return true;
+          }
+          _swapCrystals(i, j, i + 1, j); // Swap back
+        }
+      }
+    }
+    return false;
+  }
+
+  void _generateGuaranteedField() {
+    // Clear the grid
+    grid = List.generate(gridSize, (_) => List.filled(gridSize, null));
+
+    // Fill with alternating colors to ensure no initial matches
+    for (int i = 0; i < gridSize; i++) {
+      for (int j = 0; j < gridSize; j++) {
+        CrystalColor color = (i + j) % 2 == 0 ? CrystalColor.red : CrystalColor.blue;
+        grid[i][j] = Crystal(
+          color: color,
+          position: _getPositionForCell(i, j),
+          row: i,
+          col: j,
+        );
+      }
+    }
+
+    // Create a guaranteed match-3 opportunity
+    // Place three same-colored crystals in a row with one gap
+    int row = Random().nextInt(gridSize - 2);
+    int col = Random().nextInt(gridSize - 2);
+    CrystalColor matchColor = CrystalColor.green;
+
+    grid[row][col] = Crystal(
+      color: matchColor,
+      position: _getPositionForCell(row, col),
+      row: row,
+      col: col,
+    );
+    grid[row][col + 2] = Crystal(
+      color: matchColor,
+      position: _getPositionForCell(row, col + 2),
+      row: row,
+      col: col + 2,
+    );
+  }
+
+  void _swapCrystals(int row1, int col1, int row2, int col2) {
+    Crystal? temp = grid[row1][col1];
+    grid[row1][col1] = grid[row2][col2];
+    grid[row2][col2] = temp;
+
+    if (grid[row1][col1] != null) {
+      grid[row1][col1]!.position = _getPositionForCell(row1, col1);
+    }
+    if (grid[row2][col2] != null) {
+      grid[row2][col2]!.position = _getPositionForCell(row2, col2);
     }
   }
 
