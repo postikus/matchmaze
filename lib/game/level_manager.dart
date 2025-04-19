@@ -86,6 +86,15 @@ class LevelManager {
       }
     }
 
+    // Check square matches (2x2)
+    if (row >= 1 && col >= 1) {
+      if (grid[row - 1][col]?.color == current.color &&
+          grid[row][col - 1]?.color == current.color &&
+          grid[row - 1][col - 1]?.color == current.color) {
+        return true;
+      }
+    }
+
     return false;
   }
 
@@ -178,6 +187,7 @@ class LevelManager {
     final matches = <Crystal>{};
     matches.addAll(_findHorizontalMatches());
     matches.addAll(_findVerticalMatches());
+    matches.addAll(_findSquareMatches());
     return matches;
   }
 
@@ -207,9 +217,30 @@ class LevelManager {
     return matches;
   }
 
+  Set<Crystal> _findSquareMatches() {
+    final matches = <Crystal>{};
+    for (int row = 0; row < GameSettings.gridSize - 1; row++) {
+      for (int col = 0; col < GameSettings.gridSize - 1; col++) {
+        final crystals = [
+          grid[row][col],
+          grid[row][col + 1],
+          grid[row + 1][col],
+          grid[row + 1][col + 1]
+        ];
+        if (_isValidMatch(crystals)) {
+          matches.addAll(crystals.cast<Crystal>());
+        }
+      }
+    }
+    return matches;
+  }
+
   bool _isValidMatch(List<Crystal?> crystals) {
-    return crystals.every((c) => c != null) &&
-           crystals.every((c) => c!.color == crystals[0]!.color);
+    if (crystals.isEmpty || crystals.any((c) => c == null)) return false;
+    
+    final firstColor = crystals.first!.color;
+    return crystals.every((c) => c!.color == firstColor) && 
+           (crystals.length == 3 || crystals.length == 4);
   }
 
   void removeMatches(Set<Crystal> matches) {
