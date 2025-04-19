@@ -90,3 +90,11 @@ ios/
 !**/ios/**/default.pbxuser
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+
+# Android build folder
+build/app/outputs/
+build/app/intermediates/
+build/app/generated/
+build/app/debug/
+build/app/release/
+build/app/profile/
