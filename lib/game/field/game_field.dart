@@ -141,6 +141,7 @@ class GameField extends PositionComponent {
           } else {
             // Existing crystal - just update position
             crystal.position = targetPosition;
+            crystal.updateStartPosition(); // Update start position as well
           }
         }
       }
@@ -163,4 +164,4 @@ class GameField extends PositionComponent {
       ),
     );
   }
-}                  
+}                      

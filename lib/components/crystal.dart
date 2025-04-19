@@ -171,6 +171,10 @@ class Crystal extends PositionComponent with DragCallbacks {
     // Update actual positions after animation completes
     position = targetPosition.clone();
     other.position = tempPosition.clone();
+    
+    // Update start positions to match new positions
+    updateStartPosition();
+    other.updateStartPosition();
   }
 
   Future<void> matchEffect() async {
@@ -224,4 +228,9 @@ class Crystal extends PositionComponent with DragCallbacks {
       }
     }
   }
-}                        
+  
+  // Public method to update the start position
+  void updateStartPosition() {
+    _startPosition = position.clone();
+  }
+}                              
