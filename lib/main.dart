@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
 import 'core/game.dart';
+import 'core/ui_settings.dart';
 
 void main() {
   runApp(const MyApp());
@@ -28,35 +29,35 @@ class StartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: UISettings.backgroundColor,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF2A0E61), Colors.black],
+            colors: [UISettings.gradientStartColor, UISettings.gradientEndColor],
           ),
         ),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
+              Text(
                 'MATCHMAZE',
                 style: TextStyle(
-                  fontSize: 48,
+                  fontSize: UISettings.titleFontSize,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: 4,
+                  color: UISettings.titleColor,
+                  letterSpacing: UISettings.titleLetterSpacing,
                 ),
               ),
               const SizedBox(height: 10),
-              const Text(
+              Text(
                 'Match & Destroy',
                 style: TextStyle(
-                  fontSize: 24,
-                  color: Colors.purple,
-                  letterSpacing: 2,
+                  fontSize: UISettings.subtitleFontSize,
+                  color: UISettings.subtitleColor,
+                  letterSpacing: UISettings.subtitleLetterSpacing,
                 ),
               ),
               const SizedBox(height: 30),
@@ -69,12 +70,12 @@ class StartScreen extends StatelessWidget {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
-                  textStyle: const TextStyle(fontSize: 24),
+                  backgroundColor: UISettings.playButtonColor,
+                  foregroundColor: UISettings.playButtonTextColor,
+                  padding: UISettings.playButtonPadding,
+                  textStyle: TextStyle(fontSize: UISettings.playButtonFontSize),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(UISettings.playButtonBorderRadius),
                   ),
                 ),
                 child: const Text('PLAY'),
@@ -95,14 +96,14 @@ class GameScreen extends StatelessWidget {
     final game = MatchMazeGame();
     
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: UISettings.backgroundColor,
       body: Stack(
         children: [
           Center(
             child: Container(
-              constraints: const BoxConstraints(
-                maxWidth: 800,
-                maxHeight: 800,
+              constraints: BoxConstraints(
+                maxWidth: UISettings.gameContainerMaxWidth,
+                maxHeight: UISettings.gameContainerMaxHeight,
               ),
               child: GameWidget(
                 game: game,
@@ -113,10 +114,10 @@ class GameScreen extends StatelessWidget {
                       top: 10,
                       left: 10,
                       child: Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsets.all(UISettings.gameLogPadding),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
-                          borderRadius: BorderRadius.circular(8),
+                          color: UISettings.gameLogBackgroundColor.withOpacity(UISettings.gameLogOpacity),
+                          borderRadius: BorderRadius.circular(UISettings.gameLogBorderRadius),
                         ),
                         child: ValueListenableBuilder<List<String>>(
                           valueListenable: gameField.logNotifier,
@@ -124,19 +125,19 @@ class GameScreen extends StatelessWidget {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'Game Log:',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: UISettings.gameLogTextColor,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 ...log.map((entry) => Text(
                                   entry,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
+                                  style: TextStyle(
+                                    color: UISettings.gameLogTextColor,
+                                    fontSize: UISettings.gameLogTextSize,
                                   ),
                                 )).toList(),
                               ],
@@ -152,17 +153,34 @@ class GameScreen extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: 20,
-            right: 20,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (context) => const StartScreen(),
+            top: 0,
+            left: 0,
+            child: Container(
+              width: UISettings.gameContainerMaxWidth,
+              padding: EdgeInsets.all(UISettings.gameContainerPadding),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (context) => const StartScreen(),
+                        ),
+                      );
+                    },
+                    icon: Icon(Icons.arrow_back, color: UISettings.backButtonTextColor),
+                    label: Text('Back', style: TextStyle(color: UISettings.backButtonTextColor)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: UISettings.backButtonColor,
+                      padding: UISettings.backButtonPadding,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(UISettings.backButtonBorderRadius),
+                      ),
+                    ),
                   ),
-                );
-              },
+                ],
+              ),
             ),
           ),
         ],
