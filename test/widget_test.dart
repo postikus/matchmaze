@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:matchmaze/main.dart';
+import 'package:matchmaze/core/ui_settings.dart';
 
 void main() {
   testWidgets('App renders start screen', (WidgetTester tester) async {
@@ -19,5 +20,25 @@ void main() {
     expect(find.text('MATCHMAZE'), findsOneWidget);
     expect(find.text('Match & Destroy'), findsOneWidget);
     expect(find.text('PLAY'), findsOneWidget);
+
+    // Verify title styling
+    final titleFinder = find.text('MATCHMAZE');
+    final titleWidget = tester.widget<Text>(titleFinder);
+    expect(titleWidget.style?.fontSize, equals(UISettings.titleFontSize));
+    expect(titleWidget.style?.color, equals(UISettings.titleColor));
+    expect(titleWidget.style?.letterSpacing, equals(UISettings.titleLetterSpacing));
+
+    // Verify subtitle styling
+    final subtitleFinder = find.text('Match & Destroy');
+    final subtitleWidget = tester.widget<Text>(subtitleFinder);
+    expect(subtitleWidget.style?.fontSize, equals(UISettings.subtitleFontSize));
+    expect(subtitleWidget.style?.color, equals(UISettings.subtitleColor));
+    expect(subtitleWidget.style?.letterSpacing, equals(UISettings.subtitleLetterSpacing));
+
+    // Verify play button styling
+    final buttonFinder = find.byType(ElevatedButton);
+    final buttonWidget = tester.widget<ElevatedButton>(buttonFinder);
+    expect(buttonWidget.style?.backgroundColor?.resolve({}), equals(UISettings.playButtonColor));
+    expect(buttonWidget.style?.foregroundColor?.resolve({}), equals(UISettings.playButtonTextColor));
   });
 }
