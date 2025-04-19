@@ -2,16 +2,15 @@ import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import '../level_manager.dart';
 import '../../components/crystal.dart';
+import '../../core/game_settings.dart';
 
 class GameField extends PositionComponent {
-  static const animationDuration = 0.3;
-  
   final _levelManager = LevelManager();
   Crystal? _selectedCrystal;
 
   GameField() : super(anchor: Anchor.center) {
-    final totalWidth = LevelManager.gridSize * (Crystal.crystalSize + LevelManager.spacing) - LevelManager.spacing;
-    final totalHeight = LevelManager.gridSize * (Crystal.crystalSize + LevelManager.spacing) - LevelManager.spacing;
+    final totalWidth = GameSettings.gridSize * (GameSettings.crystalSize + GameSettings.gridSpacing) - GameSettings.gridSpacing;
+    final totalHeight = GameSettings.gridSize * (GameSettings.crystalSize + GameSettings.gridSpacing) - GameSettings.gridSpacing;
     size = Vector2(totalWidth, totalHeight);
   }
 
@@ -28,15 +27,15 @@ class GameField extends PositionComponent {
 
   Vector2 _getPositionForCell(int row, int col) {
     return Vector2(
-      col * (Crystal.crystalSize + LevelManager.spacing),
-      row * (Crystal.crystalSize + LevelManager.spacing),
+      col * (GameSettings.crystalSize + GameSettings.gridSpacing),
+      row * (GameSettings.crystalSize + GameSettings.gridSpacing),
     );
   }
 
   void _generateField() {
     _levelManager.generateField();
-    for (int row = 0; row < LevelManager.gridSize; row++) {
-      for (int col = 0; col < LevelManager.gridSize; col++) {
+    for (int row = 0; row < GameSettings.gridSize; row++) {
+      for (int col = 0; col < GameSettings.gridSize; col++) {
         final crystal = _levelManager.grid[row][col];
         if (crystal != null) {
           crystal.position = _getPositionForCell(row, col);
@@ -96,7 +95,7 @@ class GameField extends PositionComponent {
 
   Future<void> _removeMatches(Set<Crystal> matches) async {
     await Future.wait(matches.map((crystal) => crystal.matchEffect()));
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(Duration(milliseconds: GameSettings.matchEffectDelay));
 
     for (final crystal in matches) {
       crystal.removeFromParent();
@@ -109,19 +108,19 @@ class GameField extends PositionComponent {
     _levelManager.fillEmptySpaces();
     
     // Update positions of all crystals after moving down
-    for (int row = 0; row < LevelManager.gridSize; row++) {
-      for (int col = 0; col < LevelManager.gridSize; col++) {
+    for (int row = 0; row < GameSettings.gridSize; row++) {
+      for (int col = 0; col < GameSettings.gridSize; col++) {
         final crystal = _levelManager.grid[row][col];
         if (crystal != null) {
           final targetPosition = _getPositionForCell(row, col);
           if (!children.contains(crystal)) {
             // New crystal - add with animation
-            crystal.position = Vector2(targetPosition.x, -Crystal.crystalSize);
+            crystal.position = Vector2(targetPosition.x, -GameSettings.crystalSize);
             add(crystal);
             crystal.add(
               MoveToEffect(
                 targetPosition,
-                EffectController(duration: animationDuration),
+                EffectController(duration: GameSettings.animationDuration),
               ),
             );
           } else {
@@ -132,7 +131,7 @@ class GameField extends PositionComponent {
       }
     }
     
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(Duration(milliseconds: GameSettings.matchEffectDelay));
 
     final newMatches = _levelManager.findMatches();
     if (newMatches.isNotEmpty) {

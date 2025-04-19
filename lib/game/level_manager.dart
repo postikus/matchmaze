@@ -1,19 +1,17 @@
 import 'package:flame/components.dart';
 import 'dart:math';
 import '../components/crystal.dart';
+import '../core/game_settings.dart';
 
 class LevelManager {
-  static const int gridSize = 8;
-  static const double spacing = 5.0;
-  
-  final List<List<Crystal?>> grid = List.generate(gridSize, (_) => List.filled(gridSize, null));
+  final List<List<Crystal?>> grid = List.generate(GameSettings.gridSize, (_) => List.filled(GameSettings.gridSize, null));
   final _random = Random();
 
   void generateField() {
     final colors = CrystalColor.values;
     
-    for (int row = 0; row < gridSize; row++) {
-      for (int col = 0; col < gridSize; col++) {
+    for (int row = 0; row < GameSettings.gridSize; row++) {
+      for (int col = 0; col < GameSettings.gridSize; col++) {
         final crystal = Crystal(
           color: colors[_random.nextInt(colors.length)],
           position: _getPositionForCell(row, col),
@@ -27,8 +25,8 @@ class LevelManager {
 
   Vector2 _getPositionForCell(int row, int col) {
     return Vector2(
-      col * (Crystal.crystalSize + spacing),
-      row * (Crystal.crystalSize + spacing),
+      col * (GameSettings.crystalSize + GameSettings.gridSpacing),
+      row * (GameSettings.crystalSize + GameSettings.gridSpacing),
     );
   }
 
@@ -41,8 +39,8 @@ class LevelManager {
 
   Set<Crystal> _findHorizontalMatches() {
     final matches = <Crystal>{};
-    for (int row = 0; row < gridSize; row++) {
-      for (int col = 0; col < gridSize - 2; col++) {
+    for (int row = 0; row < GameSettings.gridSize; row++) {
+      for (int col = 0; col < GameSettings.gridSize - 2; col++) {
         final crystals = [grid[row][col], grid[row][col + 1], grid[row][col + 2]];
         if (_isValidMatch(crystals)) {
           matches.addAll(crystals.cast<Crystal>());
@@ -54,8 +52,8 @@ class LevelManager {
 
   Set<Crystal> _findVerticalMatches() {
     final matches = <Crystal>{};
-    for (int row = 0; row < gridSize - 2; row++) {
-      for (int col = 0; col < gridSize; col++) {
+    for (int row = 0; row < GameSettings.gridSize - 2; row++) {
+      for (int col = 0; col < GameSettings.gridSize; col++) {
         final crystals = [grid[row][col], grid[row + 1][col], grid[row + 2][col]];
         if (_isValidMatch(crystals)) {
           matches.addAll(crystals.cast<Crystal>());
@@ -77,8 +75,8 @@ class LevelManager {
   }
 
   void moveCrystalsDown() {
-    for (int col = 0; col < gridSize; col++) {
-      int emptyRow = gridSize - 1;
+    for (int col = 0; col < GameSettings.gridSize; col++) {
+      int emptyRow = GameSettings.gridSize - 1;
       while (emptyRow >= 0) {
         if (grid[emptyRow][col] == null) {
           int sourceRow = emptyRow - 1;
@@ -101,14 +99,14 @@ class LevelManager {
   void fillEmptySpaces() {
     final colors = CrystalColor.values;
 
-    for (int row = 0; row < gridSize; row++) {
-      for (int col = 0; col < gridSize; col++) {
+    for (int row = 0; row < GameSettings.gridSize; row++) {
+      for (int col = 0; col < GameSettings.gridSize; col++) {
         if (grid[row][col] == null) {
           final crystal = Crystal(
             color: colors[_random.nextInt(colors.length)],
             position: Vector2(
-              col * (Crystal.crystalSize + spacing),
-              -Crystal.crystalSize,
+              col * (GameSettings.crystalSize + GameSettings.gridSpacing),
+              -GameSettings.crystalSize,
             ),
             row: row,
             col: col,
