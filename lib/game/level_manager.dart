@@ -128,9 +128,5 @@ class LevelManager {
     grid[crystal2.row][crystal2.col] = crystal2;
   }
 
-  bool areNeighbors(Crystal a, Crystal b) {
-    final rowDiff = (a.row - b.row).abs();
-    final colDiff = (a.col - b.col).abs();
-    return (rowDiff == 1 && colDiff == 0) || (rowDiff == 0 && colDiff == 1);
-  }
-} 
+  // Removed areNeighbors method as it duplicates Crystal._canSwapWith functionality
+}  
