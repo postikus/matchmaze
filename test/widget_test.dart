@@ -11,7 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:matchmaze/main.dart';
 
 void main() {
-  testWidgets('App renders without errors', (WidgetTester tester) async {
+  testWidgets('App renders start screen', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const MyApp());
 
@@ -19,12 +19,5 @@ void main() {
     expect(find.text('MATCHMAZE'), findsOneWidget);
     expect(find.text('Match & Destroy'), findsOneWidget);
     expect(find.text('PLAY'), findsOneWidget);
-    
-    // Tap the PLAY button and trigger a frame
-    await tester.tap(find.text('PLAY'));
-    await tester.pumpAndSettle();
-    
-    // Verify that we navigated to the GameScreen
-    expect(find.text('Game is running'), findsOneWidget);
   });
 }

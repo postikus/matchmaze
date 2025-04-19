@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/effects.dart';
@@ -18,7 +19,6 @@ class Crystal extends PositionComponent with DragCallbacks {
   final CrystalColor color;
   int row;
   int col;
-  bool isSelected = false;
   bool isMatched = false;
   Vector2 _startPosition = Vector2.zero();
   bool _isDragging = false;
@@ -105,29 +105,8 @@ class Crystal extends PositionComponent with DragCallbacks {
       return;
     }
     
-    // Once we've moved a bit, determine the dominant direction and lock to it
-    final xDiff = (position.x - _startPosition.x).abs();
-    final yDiff = (position.y - _startPosition.y).abs();
-    
-    if (xDiff > yDiff) {
-      // Horizontal movement only
-      position.y = _startPosition.y;
-      final newX = position.x + delta.x;
-      final newDistance = (newX - _startPosition.x).abs();
-      
-      if (newDistance <= maxDistance) {
-        position.x = newX;
-      }
-    } else {
-      // Vertical movement only
-      position.x = _startPosition.x;
-      final newY = position.y + delta.y;
-      final newDistance = (newY - _startPosition.y).abs();
-      
-      if (newDistance <= maxDistance) {
-        position.y = newY;
-      }
-    }
+    // Once we've moved a bit, apply directional constraint
+    _applyDirectionalConstraint(delta, maxDistance);
   }
 
   @override
@@ -139,19 +118,11 @@ class Crystal extends PositionComponent with DragCallbacks {
     Crystal? nearestCrystal = _findNearestCrystal();
     
     if (nearestCrystal != null && _canSwapWith(nearestCrystal)) {
-      // Let the GameField handle the swap (including grid position updates)
+      // Let the GameField handle the swap
       gameField.onCrystalSwap(this, nearestCrystal);
     } else {
-      // Return to original position with smooth animation
-      add(
-        MoveToEffect(
-          _startPosition,
-          EffectController(
-            duration: GameSettings.animationDuration * 0.3,
-            curve: Curves.easeOut,
-          ),
-        ),
-      );
+      // Return to original position
+      _addMoveAnimation(_startPosition, durationFactor: 0.3, curve: Curves.easeOut);
     }
   }
 
@@ -190,36 +161,16 @@ class Crystal extends PositionComponent with DragCallbacks {
     final tempPosition = position.clone();
     final targetPosition = other.position.clone();
     
-    // Create a completer to track animation completion
-    final completer = Completer<void>();
-    
-    // Create the animation effect with a completion callback
-    final effect = MoveToEffect(
-      targetPosition,
-      EffectController(
-        duration: GameSettings.animationDuration,
-        curve: Curves.easeInOut,
-        onEnd: () => completer.complete(),
-      ),
-    );
-    
-    // Add the animation to this crystal
-    add(effect);
-    
-    // Create a similar effect for the other crystal
-    final otherEffect = MoveToEffect(
-      tempPosition,
-      EffectController(
-        duration: GameSettings.animationDuration,
-        curve: Curves.easeInOut,
-      ),
-    );
-    
-    // Add the animation to the other crystal
-    other.add(otherEffect);
+    // Use helper method for animations
+    _addMoveAnimation(targetPosition);
+    other._addMoveAnimation(tempPosition);
     
     // Wait for the animation to complete
-    return completer.future;
+    await Future.delayed(Duration(milliseconds: (GameSettings.animationDuration * 1000).round()));
+    
+    // Update actual positions after animation completes
+    position = targetPosition.clone();
+    other.position = tempPosition.clone();
   }
 
   Future<void> matchEffect() async {
@@ -236,4 +187,41 @@ class Crystal extends PositionComponent with DragCallbacks {
     await Future.delayed(Duration(milliseconds: (GameSettings.matchEffectDuration * 1000).round()));
     isMatched = false;
   }
-}    
+  
+  void _addMoveAnimation(Vector2 targetPosition, {double durationFactor = 1.0, Curve curve = Curves.easeInOut}) {
+    add(
+      MoveToEffect(
+        targetPosition,
+        EffectController(
+          duration: GameSettings.animationDuration * durationFactor,
+          curve: curve,
+        ),
+      ),
+    );
+  }
+  
+  void _applyDirectionalConstraint(Vector2 delta, double maxDistance) {
+    final xDiff = (position.x - _startPosition.x).abs();
+    final yDiff = (position.y - _startPosition.y).abs();
+    
+    if (xDiff > yDiff) {
+      // Horizontal movement only
+      position.y = _startPosition.y;
+      final newX = position.x + delta.x;
+      final newDistance = (newX - _startPosition.x).abs();
+      
+      if (newDistance <= maxDistance) {
+        position.x = newX;
+      }
+    } else {
+      // Vertical movement only
+      position.x = _startPosition.x;
+      final newY = position.y + delta.y;
+      final newDistance = (newY - _startPosition.y).abs();
+      
+      if (newDistance <= maxDistance) {
+        position.y = newY;
+      }
+    }
+  }
+}                        

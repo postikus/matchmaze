@@ -53,48 +53,11 @@ class GameField extends PositionComponent {
     return null;
   }
 
-  void onCrystalTapped(Crystal crystal) {
-    if (_selectedCrystal == null) {
-      _selectCrystal(crystal);
-    } else if (_selectedCrystal == crystal) {
-      _deselectCrystal();
-    } else if (_levelManager.areNeighbors(_selectedCrystal!, crystal)) {
-      _trySwapCrystals(_selectedCrystal!, crystal);
-    } else {
-      _switchSelection(crystal);
-    }
-  }
+  // Removed onCrystalTapped method as it's no longer needed with drag-and-drop functionality
 
-  void _selectCrystal(Crystal crystal) {
-    _selectedCrystal = crystal;
-    crystal.isSelected = true;
-  }
+  // Removed selection methods as they're no longer needed with drag-and-drop functionality
 
-  void _deselectCrystal() {
-    _selectedCrystal!.isSelected = false;
-    _selectedCrystal = null;
-  }
-
-  void _switchSelection(Crystal crystal) {
-    _selectedCrystal!.isSelected = false;
-    crystal.isSelected = true;
-    _selectedCrystal = crystal;
-  }
-
-  Future<void> _trySwapCrystals(Crystal crystal1, Crystal crystal2) async {
-    _levelManager.updateGridPosition(crystal1, crystal2);
-    await crystal1.swapWith(crystal2);
-
-    final matches = _levelManager.findMatches();
-    if (matches.isEmpty) {
-      _levelManager.updateGridPosition(crystal1, crystal2); // Swap back
-      await crystal1.swapWith(crystal2);
-    } else {
-      await _processMatches(matches);
-    }
-
-    _deselectCrystal();
-  }
+  // Removed _trySwapCrystals method as its functionality is covered by onCrystalSwap
   
   void onCrystalSwap(Crystal crystal1, Crystal crystal2) async {
     // Store original positions before updating grid
@@ -125,25 +88,8 @@ class GameField extends PositionComponent {
       _levelManager.grid[originalRow2][originalCol2] = crystal2;
       
       // Return both crystals to their original positions
-      crystal1.add(
-        MoveToEffect(
-          originalPos1,
-          EffectController(
-            duration: GameSettings.animationDuration * 0.3,
-            curve: Curves.easeOut,
-          ),
-        ),
-      );
-      
-      crystal2.add(
-        MoveToEffect(
-          originalPos2,
-          EffectController(
-            duration: GameSettings.animationDuration * 0.3,
-            curve: Curves.easeOut,
-          ),
-        ),
-      );
+      crystal1.add(_createMoveAnimation(originalPos1, durationFactor: 0.3, curve: Curves.easeOut));
+      crystal2.add(_createMoveAnimation(originalPos2, durationFactor: 0.3, curve: Curves.easeOut));
       
       return;
     }
@@ -184,12 +130,7 @@ class GameField extends PositionComponent {
             // New crystal - add with animation
             crystal.position = Vector2(targetPosition.x, -GameSettings.crystalSize);
             add(crystal);
-            crystal.add(
-              MoveToEffect(
-                targetPosition,
-                EffectController(duration: GameSettings.animationDuration),
-              ),
-            );
+            crystal.add(_createMoveAnimation(targetPosition));
           } else {
             // Existing crystal - just update position
             crystal.position = targetPosition;
@@ -205,4 +146,14 @@ class GameField extends PositionComponent {
       await _processMatches(newMatches);
     }
   }
-}   
+  
+  MoveToEffect _createMoveAnimation(Vector2 targetPosition, {double durationFactor = 1.0, Curve curve = Curves.easeInOut}) {
+    return MoveToEffect(
+      targetPosition,
+      EffectController(
+        duration: GameSettings.animationDuration * durationFactor,
+        curve: curve,
+      ),
+    );
+  }
+}                

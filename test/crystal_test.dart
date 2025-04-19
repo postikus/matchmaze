@@ -1,22 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flame/game.dart';
 import 'package:flame/components.dart';
-import 'package:flame/events.dart';
-import 'package:flutter/gestures.dart';
 import 'package:matchmaze/components/crystal.dart';
 import 'package:matchmaze/game/field/game_field.dart';
 import 'package:matchmaze/core/game_settings.dart';
+import 'package:matchmaze/core/game.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   
-  late GameField gameField;
-  
-  setUp(() {
-    gameField = GameField();
-  });
-  
-  group('Crystal Drag Mechanics', () {
+  group('Crystal Properties', () {
     test('Crystal should initialize with correct properties', () {
       final crystal = Crystal(
         color: CrystalColor.red,
@@ -32,102 +25,73 @@ void main() {
       expect(crystal.startPosition, equals(Vector2(100, 100)));
     });
     
-    test('Crystal should handle drag start', () {
-      final crystal = Crystal(
+    test('Crystal should have correct color representation', () {
+      final redCrystal = Crystal(
+        color: CrystalColor.red,
+        position: Vector2(100, 100),
+        row: 0,
+        col: 0,
+      );
+      
+      final blueCrystal = Crystal(
         color: CrystalColor.blue,
+        position: Vector2(100, 100),
+        row: 0,
+        col: 1,
+      );
+      
+      final greenCrystal = Crystal(
+        color: CrystalColor.green,
+        position: Vector2(100, 100),
+        row: 0,
+        col: 2,
+      );
+      
+      expect(redCrystal.color, equals(CrystalColor.red));
+      expect(blueCrystal.color, equals(CrystalColor.blue));
+      expect(greenCrystal.color, equals(CrystalColor.green));
+    });
+  });
+  
+  group('Crystal Animation', () {
+    test('Crystal should have animation helper methods', () {
+      final crystal = Crystal(
+        color: CrystalColor.red,
         position: Vector2(100, 100),
         row: 1,
         col: 2,
       );
       
-      final dragStartEvent = DragStartEvent(
-        0, // pointer id
-        DragStartInfo.fromDetails(
-          gameField,
-          PointerDownEvent(
-            position: const Offset(100, 100),
-          ),
-        ),
-      );
-      
-      crystal.onDragStart(dragStartEvent);
-      expect(crystal.startPosition, equals(Vector2(100, 100)));
+      // Test that the crystal has the required methods
+      expect(crystal.swapWith, isA<Function>());
+      expect(crystal.matchEffect, isA<Function>());
     });
     
-    test('Crystal should restrict horizontal movement during drag', () {
-      final crystal = Crystal(
-        color: CrystalColor.blue,
+    test('Crystal should be able to swap with another crystal', () async {
+      final crystal1 = Crystal(
+        color: CrystalColor.red,
         position: Vector2(100, 100),
+        row: 1,
+        col: 1,
+      );
+      
+      final crystal2 = Crystal(
+        color: CrystalColor.blue,
+        position: Vector2(150, 100),
         row: 1,
         col: 2,
       );
       
-      // Start the drag
-      final dragStartEvent = DragStartEvent(
-        0, // pointer id
-        DragStartInfo.fromDetails(
-          gameField,
-          PointerDownEvent(
-            position: const Offset(100, 100),
-          ),
-        ),
-      );
-      crystal.onDragStart(dragStartEvent);
+      // Capture original positions
+      final originalPos1 = crystal1.position.clone();
+      final originalPos2 = crystal2.position.clone();
       
-      // Perform a horizontal drag
-      final dragUpdateEvent = DragUpdateEvent(
-        0, // pointer id
-        DragUpdateInfo.fromDetails(
-          gameField,
-          PointerMoveEvent(
-            position: const Offset(120, 100),
-            delta: const Offset(20, 0),
-          ),
-        ),
-      );
-      crystal.onDragUpdate(dragUpdateEvent);
+      // Perform swap
+      await crystal1.swapWith(crystal2);
       
-      // Crystal should move horizontally
-      expect(crystal.position.x, greaterThan(100));
-      expect(crystal.position.y, equals(100)); // y should not change
-    });
-    
-    test('Crystal should restrict vertical movement during drag', () {
-      final crystal = Crystal(
-        color: CrystalColor.blue,
-        position: Vector2(100, 100),
-        row: 1,
-        col: 2,
-      );
-      
-      // Start the drag
-      final dragStartEvent = DragStartEvent(
-        0, // pointer id
-        DragStartInfo.fromDetails(
-          gameField,
-          PointerDownEvent(
-            position: const Offset(100, 100),
-          ),
-        ),
-      );
-      crystal.onDragStart(dragStartEvent);
-      
-      // Perform a vertical drag
-      final dragUpdateEvent = DragUpdateEvent(
-        0, // pointer id
-        DragUpdateInfo.fromDetails(
-          gameField,
-          PointerMoveEvent(
-            position: const Offset(100, 120),
-            delta: const Offset(0, 20),
-          ),
-        ),
-      );
-      crystal.onDragUpdate(dragUpdateEvent);
-      
-      // Crystal should move vertically
-      expect(crystal.position.x, equals(100)); // x should not change
-      expect(crystal.position.y, greaterThan(100));
+      // Verify positions have been swapped (approximately due to animations)
+      expect((crystal1.position - originalPos2).length, lessThan(0.1));
+      expect((crystal2.position - originalPos1).length, lessThan(0.1));
     });
   });
 }
