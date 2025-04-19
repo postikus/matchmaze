@@ -6,6 +6,9 @@ import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
 import '../game/field/game_field.dart';
 import '../core/game_settings.dart';
+import 'package:flame/input.dart';
+import 'package:flame/palette.dart';
+import 'package:flame/game.dart';
 
 enum CrystalColor {
   red,
@@ -17,121 +20,79 @@ enum CrystalColor {
 
 class Crystal extends PositionComponent with DragCallbacks {
   final CrystalColor color;
-  int row;
-  int col;
+  final int row;
+  final int col;
   bool isMatched = false;
   Vector2 _startPosition = Vector2.zero();
   bool _isDragging = false;
+  static const double _dragThreshold = 50.0;
 
   Crystal({
     required this.color,
     required Vector2 position,
     required this.row,
     required this.col,
-  }) : super(
-          position: position,
-          size: Vector2.all(GameSettings.crystalSize),
-          anchor: Anchor.center,
-        ) {
-    _startPosition = position.clone();
+  }) {
+    this.position = position;
+    _startPosition = position;
+    size = Vector2.all(GameSettings.crystalSize);
   }
-
-  Vector2 get startPosition => _startPosition;
 
   @override
   void render(Canvas canvas) {
-    final paint = Paint()
-      ..color = _getColor()
-      ..style = PaintingStyle.fill;
+    final paint = BasicPalette.white.paint();
+    final borderPaint = Paint()
+      ..color = const Color(0xFF000000)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
 
-    if (_isDragging) {
-      paint.color = paint.color.withOpacity(GameSettings.crystalSelectedOpacity);
-    }
+    // Draw crystal body
+    canvas.drawCircle(
+      size / 2,
+      GameSettings.crystalSize / 2,
+      paint..color = _getColorForCrystal(),
+    );
 
-    if (isMatched) {
-      final glowPaint = Paint()
-        ..color = Colors.white.withOpacity(GameSettings.crystalMatchedGlowOpacity)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, GameSettings.crystalGlowRadius);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          size.toRect(),
-          Radius.circular(GameSettings.crystalCornerRadius),
-        ),
-        glowPaint,
-      );
-    }
-
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        size.toRect(),
-        Radius.circular(GameSettings.crystalCornerRadius),
-      ),
-      paint,
+    // Draw crystal border
+    canvas.drawCircle(
+      size / 2,
+      GameSettings.crystalSize / 2,
+      borderPaint,
     );
   }
 
-  Color _getColor() {
+  Color _getColorForCrystal() {
     switch (color) {
       case CrystalColor.red:
-        return Colors.red;
-      case CrystalColor.green:
-        return Colors.green;
+        return const Color(0xFFFF0000).withValues(alpha: 255, red: 255, green: 0, blue: 0);
       case CrystalColor.blue:
-        return Colors.blue;
+        return const Color(0xFF0000FF).withValues(alpha: 255, red: 0, green: 0, blue: 255);
+      case CrystalColor.green:
+        return const Color(0xFF00FF00).withValues(alpha: 255, red: 0, green: 255, blue: 0);
       case CrystalColor.yellow:
-        return Colors.yellow;
+        return const Color(0xFFFFFF00).withValues(alpha: 255, red: 255, green: 255, blue: 0);
       case CrystalColor.purple:
-        return Colors.purple;
+        return const Color(0xFF800080).withValues(alpha: 255, red: 128, green: 0, blue: 128);
     }
   }
 
   @override
   void onDragStart(DragStartEvent event) {
+    super.onDragStart(event);
     _isDragging = true;
-    _startPosition = position.clone();
+    _startPosition = position;
   }
 
   @override
   void onDragUpdate(DragUpdateEvent event) {
-    final delta = event.localDelta;
-    final maxDistance = GameSettings.crystalSize / 2;
-    
-    // Calculate the current distance from start position
-    final currentDistance = position.distanceTo(_startPosition);
-    
-    // If we haven't moved much yet, allow movement in any direction
-    if (currentDistance < maxDistance * 0.2) {
-      position += delta;
-      return;
-    }
-    
-    // Once we've moved a bit, determine the dominant direction and lock to it
-    final xDiff = (position.x - _startPosition.x).abs();
-    final yDiff = (position.y - _startPosition.y).abs();
-    
-    if (xDiff > yDiff) {
-      // Horizontal movement only
-      position.y = _startPosition.y;
-      final newX = position.x + delta.x;
-      final newDistance = (newX - _startPosition.x).abs();
-      
-      if (newDistance <= maxDistance) {
-        position.x = newX;
-      }
-    } else {
-      // Vertical movement only
-      position.x = _startPosition.x;
-      final newY = position.y + delta.y;
-      final newDistance = (newY - _startPosition.y).abs();
-      
-      if (newDistance <= maxDistance) {
-        position.y = newY;
-      }
-    }
+    if (!_isDragging) return;
+
+    position += event.delta;
   }
 
   @override
   void onDragEnd(DragEndEvent event) {
+    super.onDragEnd(event);
     _isDragging = false;
     final gameField = parent as GameField;
     
@@ -180,16 +141,9 @@ class Crystal extends PositionComponent with DragCallbacks {
   }
 
   bool _canSwapWith(Crystal other) {
-    // Check if crystals are adjacent
     final rowDiff = (row - other.row).abs();
     final colDiff = (col - other.col).abs();
-    if (!((rowDiff == 1 && colDiff == 0) || (rowDiff == 0 && colDiff == 1))) {
-      return false;
-    }
-
-    // Check if swap would create a match
-    final gameField = parent as GameField;
-    return gameField.canSwapCrystals(this, other);
+    return (rowDiff == 1 && colDiff == 0) || (rowDiff == 0 && colDiff == 1);
   }
 
   Future<void> swapWith(Crystal other) async {
@@ -242,4 +196,6 @@ class Crystal extends PositionComponent with DragCallbacks {
   void updateStartPosition() {
     _startPosition = position.clone();
   }
+
+  Vector2 get startPosition => _startPosition;
 }                                    

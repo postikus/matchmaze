@@ -1,13 +1,15 @@
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
+import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 import '../level_manager.dart';
 import '../../components/crystal.dart';
 import '../../core/game_settings.dart';
 
-class GameField extends PositionComponent {
-  final _levelManager = LevelManager();
+class GameField extends PositionComponent with HasGameRef {
+  final LevelManager _levelManager = LevelManager();
   Crystal? _selectedCrystal;
+  static const double _spacing = 5.0;
 
   GameField() : super(anchor: Anchor.center) {
     final totalWidth = GameSettings.gridSize * (GameSettings.crystalSize + GameSettings.gridSpacing) - GameSettings.gridSpacing;

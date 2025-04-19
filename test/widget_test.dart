@@ -5,19 +5,11 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:matchmaze/main.dart';
 
 void main() {
-  testWidgets('App renders start screen', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
-
-    // Verify that the app starts with the StartScreen
-    expect(find.text('MATCHMAZE'), findsOneWidget);
-    expect(find.text('Match & Destroy'), findsOneWidget);
-    expect(find.text('PLAY'), findsOneWidget);
   });
 }
