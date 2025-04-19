@@ -100,9 +100,6 @@ class GameScreen extends StatelessWidget {
         children: [
           Center(
             child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.white, width: 2),
-              ),
               constraints: const BoxConstraints(
                 maxWidth: 800,
                 maxHeight: 800,
@@ -111,12 +108,41 @@ class GameScreen extends StatelessWidget {
                 game: game,
                 overlayBuilderMap: {
                   'debug': (context, game) {
-                    return const Positioned(
+                    final gameField = (game as MatchMazeGame).gameField;
+                    return Positioned(
                       top: 10,
                       left: 10,
-                      child: Text(
-                        'Game is running',
-                        style: TextStyle(color: Colors.white),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: ValueListenableBuilder<List<String>>(
+                          valueListenable: gameField.logNotifier,
+                          builder: (context, log, _) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Game Log:',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                ...log.map((entry) => Text(
+                                  entry,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
+                                )).toList(),
+                              ],
+                            );
+                          },
+                        ),
                       ),
                     );
                   },

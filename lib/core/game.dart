@@ -4,17 +4,16 @@ import 'package:flutter/material.dart';
 import '../game/field/game_field.dart';
 
 class MatchMazeGame extends FlameGame {
-  late final GameField gameField;
+  GameField gameField = GameField();
 
   @override
-  Color backgroundColor() => const Color(0xFF2A2A2A);
+  Color backgroundColor() => Colors.transparent;
 
   @override
   Future<void> onLoad() async {
     debugPrint('Game onLoad started');
     
     // Add the game field
-    gameField = GameField();
     add(gameField);
     
     debugPrint('Game onLoad completed');
