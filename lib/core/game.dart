@@ -7,14 +7,16 @@ class MatchMazeGame extends FlameGame {
   late final GameField gameField;
 
   @override
-  Color backgroundColor() => Colors.white;
+  Color backgroundColor() => const Color(0xFF2A2A2A);
 
   @override
   Future<void> onLoad() async {
-    camera.viewfinder.anchor = Anchor.center;
-    camera.viewfinder.position = Vector2.zero();
+    debugPrint('Game onLoad started');
     
+    // Add the game field
     gameField = GameField();
     add(gameField);
+    
+    debugPrint('Game onLoad completed');
   }
 } 

@@ -3,7 +3,7 @@ import 'package:flame/events.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
-import 'game_field.dart';
+import '../game/field/game_field.dart';
 
 enum CrystalColor {
   red,
@@ -65,6 +65,7 @@ class Crystal extends PositionComponent with TapCallbacks {
       );
     }
 
+    // Draw crystal with rounded corners
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(0, 0, crystalSize, crystalSize),
@@ -115,6 +116,9 @@ class Crystal extends PositionComponent with TapCallbacks {
         EffectController(duration: 0.3),
       ),
     );
+
+    // Wait for the animation to complete
+    await Future.delayed(const Duration(milliseconds: 300));
   }
 
   Future<void> matchEffect() async {

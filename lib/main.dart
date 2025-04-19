@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
-import 'my_game.dart';
+import 'core/game.dart';
 
 void main() {
   runApp(const MyApp());
@@ -28,28 +28,49 @@ class StartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.deepPurple, Colors.black],
+            colors: [Color(0xFF2A0E61), Colors.black],
           ),
         ),
         child: Center(
-          child: ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => GameScreen(),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'MATCHMAZE',
+                style: TextStyle(
+                  fontSize: 48,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 4,
                 ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              textStyle: const TextStyle(fontSize: 24),
-            ),
-            child: const Text('Начать'),
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (context) => const GameScreen(),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+                  textStyle: const TextStyle(fontSize: 24),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: const Text('PLAY'),
+              ),
+            ],
           ),
         ),
       ),
@@ -58,15 +79,58 @@ class StartScreen extends StatelessWidget {
 }
 
 class GameScreen extends StatelessWidget {
-  GameScreen({super.key});
-
-  final game = MyGame();
+  const GameScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final game = MatchMazeGame();
+    
     return Scaffold(
-      body: GameWidget(
-        game: game,
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          Center(
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              constraints: const BoxConstraints(
+                maxWidth: 800,
+                maxHeight: 800,
+              ),
+              child: GameWidget(
+                game: game,
+                overlayBuilderMap: {
+                  'debug': (context, game) {
+                    return const Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Text(
+                        'Game is running',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  },
+                },
+                initialActiveOverlays: const ['debug'],
+              ),
+            ),
+          ),
+          Positioned(
+            top: 20,
+            right: 20,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (context) => const StartScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

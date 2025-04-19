@@ -1,6 +1,6 @@
 # matchmaze
 
-A new Flutter project.
+A Flutter game with a grid-based maze matching mechanics.
 
 ## Getting Started
 
