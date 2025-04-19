@@ -164,4 +164,32 @@ class GameField extends PositionComponent {
       ),
     );
   }
+
+  bool canSwapCrystals(Crystal crystal1, Crystal crystal2) {
+    // Store original positions
+    final originalRow1 = crystal1.row;
+    final originalCol1 = crystal1.col;
+    final originalRow2 = crystal2.row;
+    final originalCol2 = crystal2.col;
+    
+    // Temporarily swap positions in the grid
+    _levelManager.updateGridPosition(crystal1, crystal2);
+    
+    // Check for matches after swap
+    final matches = _levelManager.findMatches();
+    
+    // Restore original positions in the grid
+    crystal1.row = originalRow1;
+    crystal1.col = originalCol1;
+    crystal2.row = originalRow2;
+    crystal2.col = originalCol2;
+    _levelManager.grid[originalRow1][originalCol1] = crystal1;
+    _levelManager.grid[originalRow2][originalCol2] = crystal2;
+
+    return matches.isNotEmpty;
+  }
+
+  Set<Crystal> findMatches() {
+    return _levelManager.findMatches();
+  }
 }                      

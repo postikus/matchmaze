@@ -91,20 +91,9 @@ class Crystal extends PositionComponent with DragCallbacks {
     _startPosition = position.clone();
   }
 
-  // Store previous position to calculate delta manually
-  Vector2 _previousPosition = Vector2.zero();
-  
   @override
   void onDragUpdate(DragUpdateEvent event) {
-    // On first update, initialize previous position
-    if (_previousPosition == Vector2.zero()) {
-      _previousPosition = position.clone();
-    }
-    
-    // Calculate delta manually by comparing current position to previous
-    final delta = position - _previousPosition;
-    _previousPosition = position.clone();
-    
+    final delta = event.localDelta;
     final maxDistance = GameSettings.crystalSize / 2;
     
     // Calculate the current distance from start position
@@ -116,8 +105,29 @@ class Crystal extends PositionComponent with DragCallbacks {
       return;
     }
     
-    // Once we've moved a bit, apply directional constraint
-    _applyDirectionalConstraint(delta, maxDistance);
+    // Once we've moved a bit, determine the dominant direction and lock to it
+    final xDiff = (position.x - _startPosition.x).abs();
+    final yDiff = (position.y - _startPosition.y).abs();
+    
+    if (xDiff > yDiff) {
+      // Horizontal movement only
+      position.y = _startPosition.y;
+      final newX = position.x + delta.x;
+      final newDistance = (newX - _startPosition.x).abs();
+      
+      if (newDistance <= maxDistance) {
+        position.x = newX;
+      }
+    } else {
+      // Vertical movement only
+      position.x = _startPosition.x;
+      final newY = position.y + delta.y;
+      final newDistance = (newY - _startPosition.y).abs();
+      
+      if (newDistance <= maxDistance) {
+        position.y = newY;
+      }
+    }
   }
 
   @override
@@ -132,8 +142,16 @@ class Crystal extends PositionComponent with DragCallbacks {
       // Let the GameField handle the swap
       gameField.onCrystalSwap(this, nearestCrystal);
     } else {
-      // Return to original position
-      _addMoveAnimation(_startPosition, durationFactor: 0.3, curve: Curves.easeOut);
+      // Return to original position with smooth animation
+      add(
+        MoveToEffect(
+          _startPosition,
+          EffectController(
+            duration: GameSettings.animationDuration * 0.3,
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
     }
   }
 
@@ -165,7 +183,13 @@ class Crystal extends PositionComponent with DragCallbacks {
     // Check if crystals are adjacent
     final rowDiff = (row - other.row).abs();
     final colDiff = (col - other.col).abs();
-    return (rowDiff == 1 && colDiff == 0) || (rowDiff == 0 && colDiff == 1);
+    if (!((rowDiff == 1 && colDiff == 0) || (rowDiff == 0 && colDiff == 1))) {
+      return false;
+    }
+
+    // Check if swap would create a match
+    final gameField = parent as GameField;
+    return gameField.canSwapCrystals(this, other);
   }
 
   Future<void> swapWith(Crystal other) async {
@@ -215,32 +239,6 @@ class Crystal extends PositionComponent with DragCallbacks {
     );
   }
   
-  void _applyDirectionalConstraint(Vector2 delta, double maxDistance) {
-    final xDiff = (position.x - _startPosition.x).abs();
-    final yDiff = (position.y - _startPosition.y).abs();
-    
-    if (xDiff > yDiff) {
-      // Horizontal movement only
-      position.y = _startPosition.y;
-      final newX = position.x + delta.x;
-      final newDistance = (newX - _startPosition.x).abs();
-      
-      if (newDistance <= maxDistance) {
-        position.x = newX;
-      }
-    } else {
-      // Vertical movement only
-      position.x = _startPosition.x;
-      final newY = position.y + delta.y;
-      final newDistance = (newY - _startPosition.y).abs();
-      
-      if (newDistance <= maxDistance) {
-        position.y = newY;
-      }
-    }
-  }
-  
-  // Public method to update the start position
   void updateStartPosition() {
     _startPosition = position.clone();
   }
