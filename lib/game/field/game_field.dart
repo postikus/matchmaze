@@ -6,8 +6,11 @@ import '../../components/crystal.dart';
 class GameField extends PositionComponent {
   static const int gridSize = 10;
   static const double spacing = 5.0;
+  static const animationDuration = 0.3;
+  
   final List<List<Crystal?>> _grid = List.generate(gridSize, (_) => List.filled(gridSize, null));
   Crystal? _selectedCrystal;
+  final _random = Random();
 
   GameField() : super(anchor: Anchor.center) {
     final totalWidth = gridSize * (Crystal.crystalSize + spacing) - spacing;
@@ -26,19 +29,21 @@ class GameField extends PositionComponent {
     _generateField();
   }
 
-  void _generateField() {
-    final random = Random();
-    final colors = CrystalColor.values;
+  Vector2 _getPositionForCell(int row, int col) {
+    return Vector2(
+      col * (Crystal.crystalSize + spacing),
+      row * (Crystal.crystalSize + spacing),
+    );
+  }
 
+  void _generateField() {
+    final colors = CrystalColor.values;
+    
     for (int row = 0; row < gridSize; row++) {
       for (int col = 0; col < gridSize; col++) {
-        final color = colors[random.nextInt(colors.length)];
         final crystal = Crystal(
-          color: color,
-          position: Vector2(
-            col * (Crystal.crystalSize + spacing),
-            row * (Crystal.crystalSize + spacing),
-          ),
+          color: colors[_random.nextInt(colors.length)],
+          position: _getPositionForCell(row, col),
           row: row,
           col: col,
         );
@@ -50,24 +55,30 @@ class GameField extends PositionComponent {
 
   void onCrystalTapped(Crystal crystal) {
     if (_selectedCrystal == null) {
-      // First crystal selected
-      _selectedCrystal = crystal;
-      crystal.isSelected = true;
+      _selectCrystal(crystal);
     } else if (_selectedCrystal == crystal) {
-      // Same crystal tapped - deselect
-      _selectedCrystal!.isSelected = false;
-      _selectedCrystal = null;
+      _deselectCrystal();
     } else if (_areNeighbors(_selectedCrystal!, crystal)) {
-      // Attempt to swap
-      _swapCrystals(_selectedCrystal!, crystal);
-      _selectedCrystal!.isSelected = false;
-      _selectedCrystal = null;
+      _trySwapCrystals(_selectedCrystal!, crystal);
     } else {
-      // Non-neighbor selected - switch selection
-      _selectedCrystal!.isSelected = false;
-      crystal.isSelected = true;
-      _selectedCrystal = crystal;
+      _switchSelection(crystal);
     }
+  }
+
+  void _selectCrystal(Crystal crystal) {
+    _selectedCrystal = crystal;
+    crystal.isSelected = true;
+  }
+
+  void _deselectCrystal() {
+    _selectedCrystal!.isSelected = false;
+    _selectedCrystal = null;
+  }
+
+  void _switchSelection(Crystal crystal) {
+    _selectedCrystal!.isSelected = false;
+    crystal.isSelected = true;
+    _selectedCrystal = crystal;
   }
 
   bool _areNeighbors(Crystal a, Crystal b) {
@@ -76,8 +87,7 @@ class GameField extends PositionComponent {
     return (rowDiff == 1 && colDiff == 0) || (rowDiff == 0 && colDiff == 1);
   }
 
-  Future<void> _swapCrystals(Crystal crystal1, Crystal crystal2) async {
-    // Swap positions in the grid
+  void _updateGridPosition(Crystal crystal1, Crystal crystal2) {
     final tempRow = crystal1.row;
     final tempCol = crystal1.col;
     crystal1.row = crystal2.row;
@@ -86,77 +96,70 @@ class GameField extends PositionComponent {
     crystal2.col = tempCol;
     _grid[crystal1.row][crystal1.col] = crystal1;
     _grid[crystal2.row][crystal2.col] = crystal2;
+  }
 
-    // Animate the swap
+  Future<void> _trySwapCrystals(Crystal crystal1, Crystal crystal2) async {
+    _updateGridPosition(crystal1, crystal2);
     await crystal1.swapWith(crystal2);
 
-    // Check if the swap creates any matches
     final matches = _findMatches();
     if (matches.isEmpty) {
-      // If no matches, swap back
-      final tempRow2 = crystal1.row;
-      final tempCol2 = crystal1.col;
-      crystal1.row = crystal2.row;
-      crystal1.col = crystal2.col;
-      crystal2.row = tempRow2;
-      crystal2.col = tempCol2;
-      _grid[crystal1.row][crystal1.col] = crystal1;
-      _grid[crystal2.row][crystal2.col] = crystal2;
-      
-      // Animate the swap back
+      _updateGridPosition(crystal1, crystal2); // Swap back
       await crystal1.swapWith(crystal2);
     } else {
-      // Process matches if they exist
-      await _removeMatches(matches);
-      await _refillGrid();
+      await _processMatches(matches);
     }
 
-    // Reset selection
-    _selectedCrystal = null;
+    _deselectCrystal();
+  }
+
+  Future<void> _processMatches(Set<Crystal> matches) async {
+    await _removeMatches(matches);
+    await _refillGrid();
   }
 
   Set<Crystal> _findMatches() {
     final matches = <Crystal>{};
-
-    // Check horizontal matches
-    for (int row = 0; row < gridSize; row++) {
-      for (int col = 0; col < gridSize - 2; col++) {
-        final crystal1 = _grid[row][col];
-        final crystal2 = _grid[row][col + 1];
-        final crystal3 = _grid[row][col + 2];
-        
-        if (crystal1 != null && crystal2 != null && crystal3 != null &&
-            crystal1.color == crystal2.color && crystal2.color == crystal3.color) {
-          matches.addAll([crystal1, crystal2, crystal3]);
-        }
-      }
-    }
-
-    // Check vertical matches
-    for (int row = 0; row < gridSize - 2; row++) {
-      for (int col = 0; col < gridSize; col++) {
-        final crystal1 = _grid[row][col];
-        final crystal2 = _grid[row + 1][col];
-        final crystal3 = _grid[row + 2][col];
-        
-        if (crystal1 != null && crystal2 != null && crystal3 != null &&
-            crystal1.color == crystal2.color && crystal2.color == crystal3.color) {
-          matches.addAll([crystal1, crystal2, crystal3]);
-        }
-      }
-    }
-
+    matches.addAll(_findHorizontalMatches());
+    matches.addAll(_findVerticalMatches());
     return matches;
   }
 
+  Set<Crystal> _findHorizontalMatches() {
+    final matches = <Crystal>{};
+    for (int row = 0; row < gridSize; row++) {
+      for (int col = 0; col < gridSize - 2; col++) {
+        final crystals = [_grid[row][col], _grid[row][col + 1], _grid[row][col + 2]];
+        if (_isValidMatch(crystals)) {
+          matches.addAll(crystals.cast<Crystal>());
+        }
+      }
+    }
+    return matches;
+  }
+
+  Set<Crystal> _findVerticalMatches() {
+    final matches = <Crystal>{};
+    for (int row = 0; row < gridSize - 2; row++) {
+      for (int col = 0; col < gridSize; col++) {
+        final crystals = [_grid[row][col], _grid[row + 1][col], _grid[row + 2][col]];
+        if (_isValidMatch(crystals)) {
+          matches.addAll(crystals.cast<Crystal>());
+        }
+      }
+    }
+    return matches;
+  }
+
+  bool _isValidMatch(List<Crystal?> crystals) {
+    return crystals.every((c) => c != null) &&
+           crystals.every((c) => c!.color == crystals[0]!.color);
+  }
+
   Future<void> _removeMatches(Set<Crystal> matches) async {
-    // Play match effects
     await Future.wait(matches.map((crystal) => crystal.matchEffect()));
-    
-    // Wait for effects to complete
     await Future.delayed(const Duration(milliseconds: 300));
 
-    // Remove crystals
     for (final crystal in matches) {
       _grid[crystal.row][crystal.col] = null;
       crystal.removeFromParent();
@@ -164,33 +167,35 @@ class GameField extends PositionComponent {
   }
 
   Future<void> _refillGrid() async {
-    final random = Random();
-    final colors = CrystalColor.values;
+    await _moveCrystalsDown();
+    await _fillEmptySpaces();
+    await Future.delayed(const Duration(milliseconds: 300));
 
-    // Move existing crystals down
+    final newMatches = _findMatches();
+    if (newMatches.isNotEmpty) {
+      await _processMatches(newMatches);
+    }
+  }
+
+  Future<void> _moveCrystalsDown() async {
     for (int col = 0; col < gridSize; col++) {
       int emptyRow = gridSize - 1;
       while (emptyRow >= 0) {
         if (_grid[emptyRow][col] == null) {
-          // Find the first non-null crystal above
           int sourceRow = emptyRow - 1;
           while (sourceRow >= 0 && _grid[sourceRow][col] == null) {
             sourceRow--;
           }
           
           if (sourceRow >= 0) {
-            // Move crystal down
             final crystal = _grid[sourceRow][col]!;
             _grid[emptyRow][col] = crystal;
             _grid[sourceRow][col] = null;
             crystal.row = emptyRow;
             crystal.add(
               MoveToEffect(
-                Vector2(
-                  col * (Crystal.crystalSize + spacing),
-                  emptyRow * (Crystal.crystalSize + spacing),
-                ),
-                EffectController(duration: 0.3),
+                _getPositionForCell(emptyRow, col),
+                EffectController(duration: animationDuration),
               ),
             );
           }
@@ -198,17 +203,19 @@ class GameField extends PositionComponent {
         emptyRow--;
       }
     }
+  }
 
-    // Fill empty spaces with new crystals
+  Future<void> _fillEmptySpaces() async {
+    final colors = CrystalColor.values;
+
     for (int row = 0; row < gridSize; row++) {
       for (int col = 0; col < gridSize; col++) {
         if (_grid[row][col] == null) {
-          final color = colors[random.nextInt(colors.length)];
           final crystal = Crystal(
-            color: color,
+            color: colors[_random.nextInt(colors.length)],
             position: Vector2(
               col * (Crystal.crystalSize + spacing),
-              -Crystal.crystalSize, // Start above the grid
+              -Crystal.crystalSize,
             ),
             row: row,
             col: col,
@@ -216,28 +223,14 @@ class GameField extends PositionComponent {
           _grid[row][col] = crystal;
           add(crystal);
 
-          // Animate falling
           crystal.add(
             MoveToEffect(
-              Vector2(
-                col * (Crystal.crystalSize + spacing),
-                row * (Crystal.crystalSize + spacing),
-              ),
-              EffectController(duration: 0.3),
+              _getPositionForCell(row, col),
+              EffectController(duration: animationDuration),
             ),
           );
         }
       }
-    }
-
-    // Wait for animations to complete
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    // Check for new matches after refill
-    final newMatches = _findMatches();
-    if (newMatches.isNotEmpty) {
-      await _removeMatches(newMatches);
-      await _refillGrid();
     }
   }
 } 
