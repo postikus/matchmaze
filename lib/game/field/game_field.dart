@@ -194,4 +194,93 @@ class GameField extends PositionComponent with HasGameRef {
   Set<Crystal> findMatches() {
     return _levelManager.findMatches();
   }
+
+  @override
+  void render(Canvas canvas) {
+    // Draw background grid
+    final gridPaint = Paint()
+      ..color = const Color(0x20FFFFFF)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    for (var i = 0; i <= GameSettings.gridSize; i++) {
+      // Vertical lines
+      canvas.drawLine(
+        Vector2(i * GameSettings.cellSize, 0),
+        Vector2(i * GameSettings.cellSize, size.y),
+        gridPaint,
+      );
+      // Horizontal lines
+      canvas.drawLine(
+        Vector2(0, i * GameSettings.cellSize),
+        Vector2(size.x, i * GameSettings.cellSize),
+        gridPaint,
+      );
+    }
+
+    // Draw crystals
+    for (final crystal in _levelManager.grid) {
+      for (final crystal in row) {
+        crystal?.render(canvas);
+      }
+    }
+
+    // Draw match highlight if there's a match
+    if (_currentMatch != null) {
+      final highlightPaint = Paint()
+        ..color = const Color(0x40FFFFFF)
+        ..style = PaintingStyle.fill;
+      
+      for (final crystal in _currentMatch!) {
+        final position = crystal.position;
+        canvas.drawRect(
+          Rect.fromLTWH(
+            position.x,
+            position.y,
+            GameSettings.cellSize,
+            GameSettings.cellSize,
+          ),
+          highlightPaint,
+        );
+      }
+    }
+  }
+
+  void _checkForMatches() {
+    _currentMatch = null;
+    final matches = <Crystal>[];
+    
+    // Check horizontal matches
+    for (var y = 0; y < GameSettings.gridSize; y++) {
+      for (var x = 0; x < GameSettings.gridSize - 2; x++) {
+        final crystal1 = _getCrystalAt(x, y);
+        final crystal2 = _getCrystalAt(x + 1, y);
+        final crystal3 = _getCrystalAt(x + 2, y);
+        
+        if (crystal1 != null && crystal2 != null && crystal3 != null &&
+            crystal1.color == crystal2.color && crystal2.color == crystal3.color) {
+          matches.addAll([crystal1, crystal2, crystal3]);
+        }
+      }
+    }
+    
+    // Check vertical matches
+    for (var x = 0; x < GameSettings.gridSize; x++) {
+      for (var y = 0; y < GameSettings.gridSize - 2; y++) {
+        final crystal1 = _getCrystalAt(x, y);
+        final crystal2 = _getCrystalAt(x, y + 1);
+        final crystal3 = _getCrystalAt(x, y + 2);
+        
+        if (crystal1 != null && crystal2 != null && crystal3 != null &&
+            crystal1.color == crystal2.color && crystal2.color == crystal3.color) {
+          matches.addAll([crystal1, crystal2, crystal3]);
+        }
+      }
+    }
+    
+    if (matches.isNotEmpty) {
+      _currentMatch = matches.toSet().toList();
+      _processMatches(_currentMatch!);
+    }
+  }
 }                      

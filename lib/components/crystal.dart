@@ -46,11 +46,38 @@ class Crystal extends PositionComponent with DragCallbacks {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
 
-    // Draw crystal body
+    // Add glow effect when dragging
+    if (_isDragging) {
+      final glowPaint = Paint()
+        ..color = const Color(0x40FFFFFF)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10.0);
+      canvas.drawCircle(
+        size / 2,
+        GameSettings.crystalSize / 2 + 5.0,
+        glowPaint,
+      );
+    }
+
+    // Draw crystal body with slight gradient effect
+    final gradient = RadialGradient(
+      center: const Alignment(0.0, 0.0),
+      radius: 0.5,
+      colors: [
+        _getColorForCrystal(),
+        _getColorForCrystal().withValues(alpha: 255, red: 200, green: 200, blue: 200),
+      ],
+    );
+    final gradientPaint = Paint()
+      ..shader = gradient.createShader(Rect.fromCenter(
+        center: size / 2,
+        width: GameSettings.crystalSize,
+        height: GameSettings.crystalSize,
+      ));
+
     canvas.drawCircle(
       size / 2,
       GameSettings.crystalSize / 2,
-      paint..color = _getColorForCrystal(),
+      gradientPaint,
     );
 
     // Draw crystal border
