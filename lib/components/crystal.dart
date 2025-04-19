@@ -20,8 +20,8 @@ enum CrystalColor {
 
 class Crystal extends PositionComponent with DragCallbacks {
   final CrystalColor color;
-  final int row;
-  final int col;
+  int row;
+  int col;
   bool isMatched = false;
   Vector2 _startPosition = Vector2.zero();
   bool _isDragging = false;
@@ -52,7 +52,7 @@ class Crystal extends PositionComponent with DragCallbacks {
         ..color = const Color(0x40FFFFFF)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10.0);
       canvas.drawCircle(
-        size / 2,
+        Offset(size.x / 2, size.y / 2),
         GameSettings.crystalSize / 2 + 5.0,
         glowPaint,
       );
@@ -69,20 +69,20 @@ class Crystal extends PositionComponent with DragCallbacks {
     );
     final gradientPaint = Paint()
       ..shader = gradient.createShader(Rect.fromCenter(
-        center: size / 2,
+        center: Offset(size.x / 2, size.y / 2),
         width: GameSettings.crystalSize,
         height: GameSettings.crystalSize,
       ));
 
     canvas.drawCircle(
-      size / 2,
+      Offset(size.x / 2, size.y / 2),
       GameSettings.crystalSize / 2,
       gradientPaint,
     );
 
     // Draw crystal border
     canvas.drawCircle(
-      size / 2,
+      Offset(size.x / 2, size.y / 2),
       GameSettings.crystalSize / 2,
       borderPaint,
     );
@@ -114,7 +114,7 @@ class Crystal extends PositionComponent with DragCallbacks {
   void onDragUpdate(DragUpdateEvent event) {
     if (!_isDragging) return;
 
-    position += event.delta;
+    position += event.localDelta;
   }
 
   @override
@@ -225,4 +225,4 @@ class Crystal extends PositionComponent with DragCallbacks {
   }
 
   Vector2 get startPosition => _startPosition;
-}                                    
+}                                                                                                                                                                                                                                                                                                                                                                        

@@ -5,6 +5,7 @@ class GameSettings {
 
   // Crystal settings
   static const double crystalSize = 32.0;
+  static const double cellSize = crystalSize + gridSpacing;
   static const double crystalCornerRadius = 8.0;
   static const double crystalGlowRadius = 3.0;
   static const double crystalSelectedOpacity = 0.7;
@@ -15,4 +16,4 @@ class GameSettings {
   static const double matchEffectDuration = 0.2;
   static const double matchEffectScale = 1.2;
   static const int matchEffectDelay = 300; // milliseconds
-} 
+}  

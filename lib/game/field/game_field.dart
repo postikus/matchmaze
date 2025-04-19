@@ -9,6 +9,7 @@ import '../../core/game_settings.dart';
 class GameField extends PositionComponent with HasGameRef {
   final LevelManager _levelManager = LevelManager();
   Crystal? _selectedCrystal;
+  Set<Crystal>? _currentMatch;
   static const double _spacing = 5.0;
 
   GameField() : super(anchor: Anchor.center) {
@@ -53,6 +54,10 @@ class GameField extends PositionComponent with HasGameRef {
       return _levelManager.grid[row][col];
     }
     return null;
+  }
+  
+  Crystal? _getCrystalAt(int row, int col) {
+    return getCrystalAt(row, col);
   }
 
   // Removed onCrystalTapped method as it's no longer needed with drag-and-drop functionality
@@ -206,20 +211,20 @@ class GameField extends PositionComponent with HasGameRef {
     for (var i = 0; i <= GameSettings.gridSize; i++) {
       // Vertical lines
       canvas.drawLine(
-        Vector2(i * GameSettings.cellSize, 0),
-        Vector2(i * GameSettings.cellSize, size.y),
+        Offset(i * GameSettings.cellSize, 0),
+        Offset(i * GameSettings.cellSize, size.y),
         gridPaint,
       );
       // Horizontal lines
       canvas.drawLine(
-        Vector2(0, i * GameSettings.cellSize),
-        Vector2(size.x, i * GameSettings.cellSize),
+        Offset(0, i * GameSettings.cellSize),
+        Offset(size.x, i * GameSettings.cellSize),
         gridPaint,
       );
     }
 
     // Draw crystals
-    for (final crystal in _levelManager.grid) {
+    for (final row in _levelManager.grid) {
       for (final crystal in row) {
         crystal?.render(canvas);
       }
@@ -279,8 +284,8 @@ class GameField extends PositionComponent with HasGameRef {
     }
     
     if (matches.isNotEmpty) {
-      _currentMatch = matches.toSet().toList();
+      _currentMatch = matches.toSet();
       _processMatches(_currentMatch!);
     }
   }
-}                      
+}                                                                                                                                                                                                                                                                        
