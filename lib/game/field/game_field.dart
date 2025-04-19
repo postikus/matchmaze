@@ -1,12 +1,12 @@
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
+import 'package:flutter/material.dart';
 import '../level_manager.dart';
 import '../../components/crystal.dart';
 import '../../core/game_settings.dart';
 
 class GameField extends PositionComponent {
   final _levelManager = LevelManager();
-  Crystal? _selectedCrystal;
 
   GameField() : super(anchor: Anchor.center) {
     final totalWidth = GameSettings.gridSize * (GameSettings.crystalSize + GameSettings.gridSpacing) - GameSettings.gridSpacing;
@@ -45,47 +45,53 @@ class GameField extends PositionComponent {
     }
   }
 
-  void onCrystalTapped(Crystal crystal) {
-    if (_selectedCrystal == null) {
-      _selectCrystal(crystal);
-    } else if (_selectedCrystal == crystal) {
-      _deselectCrystal();
-    } else if (_levelManager.areNeighbors(_selectedCrystal!, crystal)) {
-      _trySwapCrystals(_selectedCrystal!, crystal);
-    } else {
-      _switchSelection(crystal);
+  Crystal? getCrystalAt(int row, int col) {
+    if (row >= 0 && row < GameSettings.gridSize && col >= 0 && col < GameSettings.gridSize) {
+      return _levelManager.grid[row][col];
     }
+    return null;
   }
 
-  void _selectCrystal(Crystal crystal) {
-    _selectedCrystal = crystal;
-    crystal.isSelected = true;
-  }
-
-  void _deselectCrystal() {
-    _selectedCrystal!.isSelected = false;
-    _selectedCrystal = null;
-  }
-
-  void _switchSelection(Crystal crystal) {
-    _selectedCrystal!.isSelected = false;
-    crystal.isSelected = true;
-    _selectedCrystal = crystal;
-  }
-
-  Future<void> _trySwapCrystals(Crystal crystal1, Crystal crystal2) async {
+  void onCrystalSwap(Crystal crystal1, Crystal crystal2) async {
+    // First, update grid positions to check for matches
     _levelManager.updateGridPosition(crystal1, crystal2);
-    await crystal1.swapWith(crystal2);
-
+    
+    // Check for matches before actually swapping
     final matches = _levelManager.findMatches();
+    
     if (matches.isEmpty) {
-      _levelManager.updateGridPosition(crystal1, crystal2); // Swap back
-      await crystal1.swapWith(crystal2);
-    } else {
-      await _processMatches(matches);
+      // If no matches, revert grid positions and return crystals to original positions
+      _levelManager.updateGridPosition(crystal1, crystal2);
+      
+      // Return both crystals to their original positions
+      crystal1.add(
+        MoveToEffect(
+          crystal1.startPosition,
+          EffectController(
+            duration: GameSettings.animationDuration * 0.3,
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
+      
+      crystal2.add(
+        MoveToEffect(
+          crystal2.startPosition,
+          EffectController(
+            duration: GameSettings.animationDuration * 0.3,
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
+      
+      return;
     }
-
-    _deselectCrystal();
+    
+    // If matches found, proceed with the swap animation
+    await crystal1.swapWith(crystal2);
+    
+    // Process matches and refill the grid
+    await _processMatches(matches);
   }
 
   Future<void> _processMatches(Set<Crystal> matches) async {
