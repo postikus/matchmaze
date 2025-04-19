@@ -142,20 +142,32 @@ class GameField extends PositionComponent {
         if (crystal != null) {
           final targetPosition = _getPositionForCell(row, col);
           if (!children.contains(crystal)) {
-            // New crystal - add with animation
-            crystal.position = Vector2(targetPosition.x, -GameSettings.crystalSize);
+            // New crystal - add with animation from top
+            crystal.position = Vector2(targetPosition.x, GameSettings.newCrystalStartY);
             add(crystal);
-            crystal.add(_createMoveAnimation(targetPosition));
+            crystal.add(_createMoveAnimation(
+              targetPosition,
+              durationFactor: GameSettings.fallAnimationDuration / GameSettings.animationDuration,
+              curve: Curves.easeOut,
+            ));
           } else {
-            // Existing crystal - just update position
-            crystal.position = targetPosition;
+            // Existing crystal - animate to new position
+            final currentPosition = crystal.position.clone();
+            if (currentPosition != targetPosition) {
+              crystal.add(_createMoveAnimation(
+                targetPosition,
+                durationFactor: GameSettings.fallAnimationDuration / GameSettings.animationDuration,
+                curve: Curves.easeOut,
+              ));
+            }
             crystal.updateStartPosition(); // Update start position as well
           }
         }
       }
     }
     
-    await Future.delayed(Duration(milliseconds: GameSettings.matchEffectDelay));
+    // Wait for all animations to complete
+    await Future.delayed(Duration(milliseconds: (GameSettings.fallAnimationDuration * 1000).round()));
 
     final newMatches = _levelManager.findMatches();
     if (newMatches.isNotEmpty) {
