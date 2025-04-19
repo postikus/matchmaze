@@ -91,9 +91,20 @@ class Crystal extends PositionComponent with DragCallbacks {
     _startPosition = position.clone();
   }
 
+  // Store previous position to calculate delta manually
+  Vector2 _previousPosition = Vector2.zero();
+  
   @override
   void onDragUpdate(DragUpdateEvent event) {
-    final delta = event.localDelta;
+    // On first update, initialize previous position
+    if (_previousPosition == Vector2.zero()) {
+      _previousPosition = position.clone();
+    }
+    
+    // Calculate delta manually by comparing current position to previous
+    final delta = position - _previousPosition;
+    _previousPosition = position.clone();
+    
     final maxDistance = GameSettings.crystalSize / 2;
     
     // Calculate the current distance from start position
@@ -233,4 +244,4 @@ class Crystal extends PositionComponent with DragCallbacks {
   void updateStartPosition() {
     _startPosition = position.clone();
   }
-}                              
+}                                    
