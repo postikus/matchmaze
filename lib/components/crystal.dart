@@ -14,12 +14,14 @@ enum CrystalColor {
   purple,
 }
 
-class Crystal extends PositionComponent with TapCallbacks {
+class Crystal extends PositionComponent with DragCallbacks {
   final CrystalColor color;
   int row;
   int col;
   bool isSelected = false;
   bool isMatched = false;
+  Vector2 _startPosition = Vector2.zero();
+  bool _isDragging = false;
 
   Crystal({
     required this.color,
@@ -30,7 +32,11 @@ class Crystal extends PositionComponent with TapCallbacks {
           position: position,
           size: Vector2.all(GameSettings.crystalSize),
           anchor: Anchor.center,
-        );
+        ) {
+    _startPosition = position.clone();
+  }
+
+  Vector2 get startPosition => _startPosition;
 
   @override
   void render(Canvas canvas) {
@@ -38,7 +44,7 @@ class Crystal extends PositionComponent with TapCallbacks {
       ..color = _getColor()
       ..style = PaintingStyle.fill;
 
-    if (isSelected) {
+    if (_isDragging) {
       paint.color = paint.color.withOpacity(GameSettings.crystalSelectedOpacity);
     }
 
@@ -80,15 +86,140 @@ class Crystal extends PositionComponent with TapCallbacks {
   }
 
   @override
-  void onTapDown(TapDownEvent event) {
+  void onDragStart(DragStartEvent event) {
+    _isDragging = true;
+    _startPosition = position.clone();
+  }
+
+  @override
+  void onDragUpdate(DragUpdateEvent event) {
+    final delta = event.localDelta;
+    final maxDistance = GameSettings.crystalSize / 2;
+    
+    // Calculate the current distance from start position
+    final currentDistance = position.distanceTo(_startPosition);
+    
+    // If we haven't moved much yet, allow movement in any direction
+    if (currentDistance < maxDistance * 0.2) {
+      position += delta;
+      return;
+    }
+    
+    // Once we've moved a bit, determine the dominant direction and lock to it
+    final xDiff = (position.x - _startPosition.x).abs();
+    final yDiff = (position.y - _startPosition.y).abs();
+    
+    if (xDiff > yDiff) {
+      // Horizontal movement only
+      position.y = _startPosition.y;
+      final newX = position.x + delta.x;
+      final newDistance = (newX - _startPosition.x).abs();
+      
+      if (newDistance <= maxDistance) {
+        position.x = newX;
+      }
+    } else {
+      // Vertical movement only
+      position.x = _startPosition.x;
+      final newY = position.y + delta.y;
+      final newDistance = (newY - _startPosition.y).abs();
+      
+      if (newDistance <= maxDistance) {
+        position.y = newY;
+      }
+    }
+  }
+
+  @override
+  void onDragEnd(DragEndEvent event) {
+    _isDragging = false;
     final gameField = parent as GameField;
-    gameField.onCrystalTapped(this);
+    
+    // Find the nearest crystal to swap with
+    Crystal? nearestCrystal = _findNearestCrystal();
+    
+    if (nearestCrystal != null && _canSwapWith(nearestCrystal)) {
+      // Let the GameField handle the swap (including grid position updates)
+      gameField.onCrystalSwap(this, nearestCrystal);
+    } else {
+      // Return to original position with smooth animation
+      add(
+        MoveToEffect(
+          _startPosition,
+          EffectController(
+            duration: GameSettings.animationDuration * 0.3,
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
+    }
+  }
+
+  Crystal? _findNearestCrystal() {
+    final gameField = parent as GameField;
+    
+    // Determine drag direction based on current position vs start position
+    final xDiff = position.x - _startPosition.x;
+    final yDiff = position.y - _startPosition.y;
+    
+    // Check if movement is predominantly horizontal or vertical
+    if (xDiff.abs() > yDiff.abs()) {
+      // Horizontal movement
+      final horizontalDirection = xDiff > 0 ? 1 : -1; // 1 for right, -1 for left
+      // Check the crystal in that direction
+      return gameField.getCrystalAt(row, col + horizontalDirection);
+    } else if (yDiff.abs() > 0) {
+      // Vertical movement
+      final verticalDirection = yDiff > 0 ? 1 : -1; // 1 for down, -1 for up
+      // Check the crystal in that direction
+      return gameField.getCrystalAt(row + verticalDirection, col);
+    }
+    
+    // If no significant movement, return null
+    return null;
+  }
+
+  bool _canSwapWith(Crystal other) {
+    // Check if crystals are adjacent
+    final rowDiff = (row - other.row).abs();
+    final colDiff = (col - other.col).abs();
+    return (rowDiff == 1 && colDiff == 0) || (rowDiff == 0 && colDiff == 1);
   }
 
   Future<void> swapWith(Crystal other) async {
     final tempPosition = position.clone();
-    position = other.position.clone();
-    other.position = tempPosition;
+    final targetPosition = other.position.clone();
+    
+    // Create a completer to track animation completion
+    final completer = Completer<void>();
+    
+    // Create the animation effect with a completion callback
+    final effect = MoveToEffect(
+      targetPosition,
+      EffectController(
+        duration: GameSettings.animationDuration,
+        curve: Curves.easeInOut,
+        onEnd: () => completer.complete(),
+      ),
+    );
+    
+    // Add the animation to this crystal
+    add(effect);
+    
+    // Create a similar effect for the other crystal
+    final otherEffect = MoveToEffect(
+      tempPosition,
+      EffectController(
+        duration: GameSettings.animationDuration,
+        curve: Curves.easeInOut,
+      ),
+    );
+    
+    // Add the animation to the other crystal
+    other.add(otherEffect);
+    
+    // Wait for the animation to complete
+    return completer.future;
   }
 
   Future<void> matchEffect() async {
@@ -105,4 +236,4 @@ class Crystal extends PositionComponent with TapCallbacks {
     await Future.delayed(Duration(milliseconds: (GameSettings.matchEffectDuration * 1000).round()));
     isMatched = false;
   }
-} 
+}    

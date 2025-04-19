@@ -1,5 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
+import 'package:flutter/material.dart';
 import '../level_manager.dart';
 import '../../components/crystal.dart';
 import '../../core/game_settings.dart';
@@ -45,6 +46,13 @@ class GameField extends PositionComponent {
     }
   }
 
+  Crystal? getCrystalAt(int row, int col) {
+    if (row >= 0 && row < GameSettings.gridSize && col >= 0 && col < GameSettings.gridSize) {
+      return _levelManager.grid[row][col];
+    }
+    return null;
+  }
+
   void onCrystalTapped(Crystal crystal) {
     if (_selectedCrystal == null) {
       _selectCrystal(crystal);
@@ -86,6 +94,65 @@ class GameField extends PositionComponent {
     }
 
     _deselectCrystal();
+  }
+  
+  void onCrystalSwap(Crystal crystal1, Crystal crystal2) async {
+    // Store original positions before updating grid
+    final originalPos1 = crystal1.position.clone();
+    final originalPos2 = crystal2.position.clone();
+    
+    // Store original grid positions
+    final originalRow1 = crystal1.row;
+    final originalCol1 = crystal1.col;
+    final originalRow2 = crystal2.row;
+    final originalCol2 = crystal2.col;
+    
+    // Update grid positions to check for matches
+    _levelManager.updateGridPosition(crystal1, crystal2);
+    
+    // Check for matches before actually swapping
+    final matches = _levelManager.findMatches();
+    
+    if (matches.isEmpty) {
+      // If no matches, revert grid positions
+      crystal1.row = originalRow1;
+      crystal1.col = originalCol1;
+      crystal2.row = originalRow2;
+      crystal2.col = originalCol2;
+      
+      // Update the grid to match the reverted positions
+      _levelManager.grid[originalRow1][originalCol1] = crystal1;
+      _levelManager.grid[originalRow2][originalCol2] = crystal2;
+      
+      // Return both crystals to their original positions
+      crystal1.add(
+        MoveToEffect(
+          originalPos1,
+          EffectController(
+            duration: GameSettings.animationDuration * 0.3,
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
+      
+      crystal2.add(
+        MoveToEffect(
+          originalPos2,
+          EffectController(
+            duration: GameSettings.animationDuration * 0.3,
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
+      
+      return;
+    }
+    
+    // If matches found, proceed with the swap animation
+    await crystal1.swapWith(crystal2);
+    
+    // Process matches and refill the grid
+    await _processMatches(matches);
   }
 
   Future<void> _processMatches(Set<Crystal> matches) async {
@@ -138,4 +205,4 @@ class GameField extends PositionComponent {
       await _processMatches(newMatches);
     }
   }
-} 
+}   
