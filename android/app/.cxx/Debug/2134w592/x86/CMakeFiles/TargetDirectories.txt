@@ -1,0 +1,2 @@
+/Users/ignatkarpov/matchmaze/android/app/.cxx/Debug/2134w592/x86/CMakeFiles/edit_cache.dir
+/Users/ignatkarpov/matchmaze/android/app/.cxx/Debug/2134w592/x86/CMakeFiles/rebuild_cache.dir
