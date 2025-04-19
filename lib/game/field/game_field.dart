@@ -59,7 +59,7 @@ class GameField extends PositionComponent {
 
   // Removed _trySwapCrystals method as its functionality is covered by onCrystalSwap
   
-  void onCrystalSwap(Crystal crystal1, Crystal crystal2) async {
+  Future<void> onCrystalSwap(Crystal crystal1, Crystal crystal2) async {
     // Store original positions before updating grid
     final originalPos1 = crystal1.position.clone();
     final originalPos2 = crystal2.position.clone();
@@ -90,6 +90,13 @@ class GameField extends PositionComponent {
       // Return both crystals to their original positions
       crystal1.add(_createMoveAnimation(originalPos1, durationFactor: 0.3, curve: Curves.easeOut));
       crystal2.add(_createMoveAnimation(originalPos2, durationFactor: 0.3, curve: Curves.easeOut));
+      
+      // Wait for animations to complete
+      await Future.delayed(Duration(milliseconds: (GameSettings.animationDuration * 0.3 * 1000).round()));
+      
+      // Update actual positions after animations complete
+      crystal1.position = originalPos1.clone();
+      crystal2.position = originalPos2.clone();
       
       return;
     }
@@ -156,4 +163,4 @@ class GameField extends PositionComponent {
       ),
     );
   }
-}                
+}                  
