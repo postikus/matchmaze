@@ -50,7 +50,16 @@ class StartScreen extends StatelessWidget {
                   letterSpacing: 4,
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 10),
+              const Text(
+                'Match & Destroy',
+                style: TextStyle(
+                  fontSize: 24,
+                  color: Colors.purple,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pushReplacement(
