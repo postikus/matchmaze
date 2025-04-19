@@ -87,12 +87,26 @@ class Crystal extends PositionComponent with DragCallbacks {
 
   @override
   void onDragStart(DragStartEvent event) {
+    if (parent == null || parent is! GameField) {
+      return;
+    }
+    final gameField = parent as GameField;
+    if (gameField.isAnimating) {
+      return;
+    }
     _isDragging = true;
     _startPosition = position.clone();
   }
 
   @override
   void onDragUpdate(DragUpdateEvent event) {
+    if (parent == null || parent is! GameField) {
+      return;
+    }
+    final gameField = parent as GameField;
+    if (gameField.isAnimating) {
+      return;
+    }
     final delta = event.localDelta;
     final maxDistance = GameSettings.crystalSize / 2;
     
@@ -132,13 +146,21 @@ class Crystal extends PositionComponent with DragCallbacks {
 
   @override
   void onDragEnd(DragEndEvent event) {
-    _isDragging = false;
+    if (parent == null || parent is! GameField) {
+      return;
+    }
     final gameField = parent as GameField;
+    if (gameField.isAnimating) {
+      return;
+    }
+    _isDragging = false;
     
     // Find the nearest crystal to swap with
     Crystal? nearestCrystal = _findNearestCrystal();
     
     if (nearestCrystal != null && _canSwapWith(nearestCrystal)) {
+      // Return to start position first
+      position = _startPosition.clone();
       // Let the GameField handle the swap
       gameField.onCrystalSwap(this, nearestCrystal);
     } else {
