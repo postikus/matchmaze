@@ -8,6 +8,9 @@ import '../../core/game_settings.dart';
 class GameField extends PositionComponent {
   final _levelManager = LevelManager();
   Crystal? _selectedCrystal;
+  bool _isAnimating = false;
+
+  bool get isAnimating => _isAnimating;
 
   GameField() : super(anchor: Anchor.center) {
     final totalWidth = GameSettings.gridSize * (GameSettings.crystalSize + GameSettings.gridSpacing) - GameSettings.gridSpacing;
@@ -60,6 +63,7 @@ class GameField extends PositionComponent {
   // Removed _trySwapCrystals method as its functionality is covered by onCrystalSwap
   
   Future<void> onCrystalSwap(Crystal crystal1, Crystal crystal2) async {
+    _isAnimating = true;
     // Store original positions before updating grid
     final originalPos1 = crystal1.position.clone();
     final originalPos2 = crystal2.position.clone();
@@ -98,6 +102,7 @@ class GameField extends PositionComponent {
       crystal1.position = originalPos1.clone();
       crystal2.position = originalPos2.clone();
       
+      _isAnimating = false;
       return;
     }
     
@@ -106,11 +111,14 @@ class GameField extends PositionComponent {
     
     // Process matches and refill the grid
     await _processMatches(matches);
+    _isAnimating = false;
   }
 
   Future<void> _processMatches(Set<Crystal> matches) async {
+    _isAnimating = true;
     await _removeMatches(matches);
     await _refillGrid();
+    _isAnimating = false;
   }
 
   Future<void> _removeMatches(Set<Crystal> matches) async {
