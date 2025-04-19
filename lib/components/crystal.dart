@@ -96,6 +96,7 @@ class Crystal extends PositionComponent with DragCallbacks {
     }
     _isDragging = true;
     _startPosition = position.clone();
+    gameField.updateState('Crystal is being dragged');
   }
 
   @override

@@ -9,8 +9,12 @@ class GameField extends PositionComponent {
   final _levelManager = LevelManager();
   Crystal? _selectedCrystal;
   bool _isAnimating = false;
+  final ValueNotifier<List<String>> _logNotifier = ValueNotifier<List<String>>(['Game started']);
+  static const maxLogEntries = 5;
+  String _lastState = 'Game started';
 
   bool get isAnimating => _isAnimating;
+  ValueNotifier<List<String>> get logNotifier => _logNotifier;
 
   GameField() : super(anchor: Anchor.center) {
     final totalWidth = GameSettings.gridSize * (GameSettings.crystalSize + GameSettings.gridSpacing) - GameSettings.gridSpacing;
@@ -62,8 +66,26 @@ class GameField extends PositionComponent {
 
   // Removed _trySwapCrystals method as its functionality is covered by onCrystalSwap
   
+  void updateState(String state) {
+    // Don't log if it's the same state or if it's "Game is running" after any other state
+    if (state == _lastState || (state == 'Game is running' && _lastState != 'Game started')) {
+      return;
+    }
+    
+    final currentTime = DateTime.now().toIso8601String().split('T')[1].split('.')[0];
+    final newEntry = '[$currentTime] $state';
+    final currentLog = List<String>.from(_logNotifier.value);
+    currentLog.insert(0, newEntry);
+    if (currentLog.length > maxLogEntries) {
+      currentLog.removeLast();
+    }
+    _logNotifier.value = currentLog;
+    _lastState = state;
+  }
+
   Future<void> onCrystalSwap(Crystal crystal1, Crystal crystal2) async {
     _isAnimating = true;
+    updateState('Crystals are swapping');
     // Store original positions before updating grid
     final originalPos1 = crystal1.position.clone();
     final originalPos2 = crystal2.position.clone();
@@ -103,6 +125,7 @@ class GameField extends PositionComponent {
       crystal2.position = originalPos2.clone();
       
       _isAnimating = false;
+      updateState('Game is running');
       return;
     }
     
@@ -112,16 +135,20 @@ class GameField extends PositionComponent {
     // Process matches and refill the grid
     await _processMatches(matches);
     _isAnimating = false;
+    updateState('Game is running');
   }
 
   Future<void> _processMatches(Set<Crystal> matches) async {
     _isAnimating = true;
+    updateState('Processing matches');
     await _removeMatches(matches);
     await _refillGrid();
     _isAnimating = false;
+    updateState('Game is running');
   }
 
   Future<void> _removeMatches(Set<Crystal> matches) async {
+    updateState('Removing matches');
     await Future.wait(matches.map((crystal) => crystal.matchEffect()));
     await Future.delayed(Duration(milliseconds: GameSettings.matchEffectDelay));
 
@@ -132,6 +159,7 @@ class GameField extends PositionComponent {
   }
 
   Future<void> _refillGrid() async {
+    updateState('Filling empty spaces');
     _levelManager.moveCrystalsDown();
     _levelManager.fillEmptySpaces();
     
